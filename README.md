@@ -40,3 +40,44 @@ pip install pycaw
 ```
 pip install comtypes
 ```
+# linux 
+
+```
+sudo apt update
+```
+```
+sudo apt install python3-pip python3-pyqt5 portaudio19-dev python3-tk scrot
+```
+```
+sudo pip install PyQt5 requests edge-tts SpeechRecognition pygame psutil opencv-
+```
+```
+python-headless mediapipe==0.10.14 pyautogui --break-system-packages
+```
+```
+sudo pip install PyQt5 --break-system-packages
+```
+```
+sudo pip install requests --break-system-packages
+```
+```
+sudo pip install edge-tts --break-system-packages
+```
+```
+sudo pip install SpeechRecognition --break-system-packages
+```
+```
+sudo pip install pygame --break-system-packages
+```
+```
+sudo pip install psutil --break-system-packages
+```
+```
+sudo pip install opencv-python-headless --break-system-packages
+```
+```
+sudo pip install mediapipe==0.10.14 --break-system-packages
+```
+```
+sudo pip install pyautogui --break-system-packages
+```

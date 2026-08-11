@@ -104,3 +104,18 @@ pip install -r requirements.txt --break-system-packages
 ```
 python3 main.py
 ```
+
+#
+
+```
+winget install Python.Python.3.12
+```
+```
+winget install Ollama.Ollama
+```
+```
+ollama run llama3.2
+```
+```
+ollama run qwen2.5:1.5b
+```

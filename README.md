@@ -81,3 +81,5 @@ sudo pip install mediapipe==0.10.14 --break-system-packages
 ```
 sudo pip install pyautogui --break-system-packages
 ```
+
+# git clone commands

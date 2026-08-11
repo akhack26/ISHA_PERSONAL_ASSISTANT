@@ -4,7 +4,10 @@
 
 # Windows
 
-# pip install PyQt5
+#1
+'''
+pip install PyQt5
+'''
 # pip install requests
 # pip install edge-tts
 # pip install SpeechRecognition

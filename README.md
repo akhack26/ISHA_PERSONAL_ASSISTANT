@@ -83,3 +83,24 @@ sudo pip install pyautogui --break-system-packages
 ```
 
 # git clone commands
+
+```
+git clone https://github.com/USERNAME/REPOSITORY_NAME.git && cd REPOSITORY_NAME && sudo apt update && sudo apt install -y python3-pip python3-pyqt5 portaudio19-dev python3-tk scrot && pip install -r requirements.txt --break-system-packages
+```
+
+
+```
+git clone https://github.com/USERNAME/REPOSITORY_NAME.git
+```
+```
+cd REPOSITORY_NAME
+```
+```
+sudo apt update && sudo apt install -y python3-pip python3-pyqt5 portaudio19-dev python3-tk scrot
+```
+```
+pip install -r requirements.txt --break-system-packages
+```
+```
+python3 main.py
+```

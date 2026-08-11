@@ -1,1 +1,12 @@
-
+PyQt5
+requests
+edge-tts
+SpeechRecognition
+pygame
+psutil
+opencv-python-headless
+mediapipe==0.10.14
+pyautogui
+pywin32
+pycaw
+comtypes

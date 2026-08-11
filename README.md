@@ -105,7 +105,7 @@ pip install -r requirements.txt --break-system-packages
 python3 main.py
 ```
 
-#
+# SYSTEM SUPPORT
 
 ```
 winget install Python.Python.3.12

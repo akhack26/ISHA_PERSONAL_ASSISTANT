@@ -1,0 +1,578 @@
+# ISHA – GGUF Runtime Installation Problem Fix
+
+Mere current ISHA project me Ollama ko replace karke direct GGUF + `llama-cpp-python` use kiya gaya hai.
+
+Lekin startup par ye error aa raha hai:
+
+```text
+[gguf] llama-cpp-python missing — pip install llama-cpp-python
+```
+
+Maine terminal me:
+
+```bash
+pip install llama-cpp-python
+```
+
+run karne ki koshish ki, lekin installation fail/error de rahi hai.
+
+## IMPORTANT
+
+Mujhe sirf error message hide ya bypass nahi karna hai.
+
+Mujhe actual root cause fix karna hai.
+
+Current ISHA code me `.isha_runtime` naam ka dedicated Python virtual environment/runtime use hota hai. Isliye ensure karo ki `llama-cpp-python` **usi Python environment me install aur import ho jahan ISHA actually run ho raha hai**.
+
+---
+
+# 1. First Inspect the Existing Code
+
+Current `ISHARUNING.py` ko completely inspect karo.
+
+Especially check:
+
+- `.isha_runtime` creation
+- runtime Python path
+- dependency installer
+- startup sequence
+- `llama_cpp` import
+- GGUF model initialization
+- GGUF model path
+- error handling
+- subprocess commands used to install dependencies
+
+Existing architecture ko samjhe bina random installation commands mat add karo.
+
+---
+
+# 2. Fix the Python Environment Issue
+
+Current project apna runtime:
+
+```text
+.isha_runtime/
+```
+
+use karta hai.
+
+Ensure karo ki:
+
+```text
+llama-cpp-python
+```
+
+system/global Python me nahi, balki **ISHA ke actual runtime Python** me install/check ho.
+
+Runtime Python ko dynamically detect karo.
+
+Conceptually:
+
+```text
+ISHA
+ ↓
+.isha_runtime
+ ↓
+.isha_runtime/bin/python
+        OR
+.isha_runtime/Scripts/python.exe
+ ↓
+llama-cpp-python
+ ↓
+GGUF
+```
+
+Platform ke according correct Python executable use karo.
+
+Linux:
+
+```text
+.isha_runtime/bin/python
+```
+
+Windows:
+
+```text
+.isha_runtime/Scripts/python.exe
+```
+
+---
+
+# 3. Do NOT Simply Use `pip`
+
+Dependency installation ke liye blindly:
+
+```bash
+pip install llama-cpp-python
+```
+
+use mat karo.
+
+Instead, runtime ke exact Python interpreter ke through pip run karo:
+
+```bash
+<runtime_python> -m pip install llama-cpp-python
+```
+
+Isse package exactly us environment me install hoga jisme ISHA run hota hai.
+
+---
+
+# 4. Verify Installation
+
+Installation ke baad automatically verify karo:
+
+```python
+import llama_cpp
+```
+
+Aur preferably:
+
+```python
+from llama_cpp import Llama
+```
+
+test karo.
+
+Agar import successful hai:
+
+```text
+llama-cpp-python: OK
+```
+
+show/log karo.
+
+Agar fail hai to actual exception capture karo.
+
+Sirf:
+
+```text
+llama-cpp-python missing
+```
+
+mat dikhao.
+
+Actual reason bhi log karo.
+
+Example:
+
+```text
+llama-cpp-python import failed:
+<actual exception>
+```
+
+---
+
+# 5. IMPORTANT: Installation Failure Must Be Diagnosable
+
+Agar `llama-cpp-python` install fail hota hai, user ko useful error dena hai.
+
+For example:
+
+```text
+GGUF runtime dependency installation failed.
+
+Python:
+<actual runtime python>
+
+Python version:
+<version>
+
+Platform:
+<platform>
+
+Architecture:
+<x64/arm/etc>
+
+Error:
+<actual pip error>
+```
+
+Isse mujhe pata chalega ki problem:
+
+- Python version
+- compiler
+- CMake
+- architecture
+- wheel availability
+- permissions
+- network
+- build dependency
+
+me se kis wajah se hai.
+
+**Error ko swallow mat karo.**
+
+---
+
+# 6. Do Not Break Existing Runtime
+
+`.isha_runtime` system ko remove mat karo.
+
+Existing runtime architecture preserve karo.
+
+Bas ensure karo ki GGUF dependency bhi usi runtime ka part ho.
+
+Ideal dependency flow:
+
+```text
+ISHA startup
+     ↓
+Check .isha_runtime
+     ↓
+Create if missing
+     ↓
+Check llama-cpp-python
+     ↓
+If missing:
+    install into .isha_runtime
+     ↓
+Verify import
+     ↓
+Load GGUF
+```
+
+---
+
+# 7. GGUF Model Path Problem Also Fix
+
+Mere current folder structure me GGUF file `ISHARUNING.py` ke same folder me rakhi hui hai.
+
+Current structure:
+
+```text
+AI/
+├── ISHARUNING.py
+├── llama-3.2-3b-instruct-q4_k_m.gguf
+├── isha_memory/
+├── isha_chat_history.json
+└── ...
+```
+
+Current code agar:
+
+```text
+models/llama-3.2-3b-instruct-q4_k_m.gguf
+```
+
+expect kar raha hai, to ye mismatch fix karo.
+
+Mujhe do possible locations support karne hain:
+
+### Preferred:
+
+```text
+AI/
+└── models/
+    └── llama-3.2-3b-instruct-q4_k_m.gguf
+```
+
+### Also support:
+
+```text
+AI/
+└── llama-3.2-3b-instruct-q4_k_m.gguf
+```
+
+Model resolver automatically dono locations check kare.
+
+Priority:
+
+```text
+1. Configured model path
+2. ./models/<model>
+3. ./<model>
+```
+
+Agar model nahi milta to clear error show karo.
+
+---
+
+# 8. Do Not Duplicate the GGUF Model
+
+Agar model already project root me hai, unnecessarily uski copy mat banao.
+
+Model ko move/copy karna mandatory mat karo.
+
+Existing file ko detect karke use kar sakte ho.
+
+---
+
+# 9. Relative Path Problem Fix
+
+Model path current working directory (`cwd`) par depend nahi hona chahiye.
+
+Ye avoid karo:
+
+```python
+model_path = "llama-3.2-3b-instruct-q4_k_m.gguf"
+```
+
+without resolving the project directory.
+
+Project root ko `ISHARUNING.py` ke location se determine karo.
+
+Concept:
+
+```text
+PROJECT_ROOT = directory containing ISHARUNING.py
+```
+
+Then model path resolve karo.
+
+Isse ISHA kisi bhi directory se launch kiya ja sake aur GGUF path break na ho.
+
+---
+
+# 10. GGUF Model
+
+Current model:
+
+```text
+llama-3.2-3b-instruct-q4_k_m.gguf
+```
+
+hai.
+
+Is model ko change mat karo.
+
+Pehle current model ko successfully load karao.
+
+---
+
+# 11. llama.cpp Compatibility
+
+`llama-cpp-python` install karte waqt environment/platform compatibility properly handle karo.
+
+Blindly source compilation force mat karo agar compatible prebuilt wheel available ho.
+
+Agar source build required ho, to actual build requirements/error clearly detect karo.
+
+Important:
+
+**Fake success mat show karo.**
+
+Agar package install nahi hua hai to:
+
+```text
+GGUF backend ready
+```
+
+mat dikhao.
+
+---
+
+# 12. Startup Behavior
+
+ISHA start hone par expected sequence:
+
+```text
+ISHA START
+   ↓
+Initialize .isha_runtime
+   ↓
+Check Python runtime
+   ↓
+Check llama-cpp-python
+   ↓
+Install if genuinely missing
+   ↓
+Verify import
+   ↓
+Resolve GGUF path
+   ↓
+Verify GGUF exists
+   ↓
+Load GGUF model
+   ↓
+GGUF backend READY
+   ↓
+ISHA ready
+```
+
+---
+
+# 13. No Ollama Dependency
+
+GGUF backend ke liye Ollama use nahi karna hai.
+
+Final local inference:
+
+```text
+ISHA
+ ↓
+llama-cpp-python
+ ↓
+llama.cpp
+ ↓
+GGUF
+```
+
+hona chahiye.
+
+---
+
+# 14. Preserve Existing Fast Streaming
+
+GGUF load successfully hone ke baad existing fast streaming architecture preserve karo.
+
+Use:
+
+```python
+stream=True
+```
+
+and stream chunks directly to ISHA GUI.
+
+GGUF model ko har message par reload mat karo.
+
+Model once load ho aur memory me resident rahe.
+
+---
+
+# 15. GUI Error Must Be Helpful
+
+Agar dependency missing hai, GUI me simple message ke saath diagnostic details available honi chahiye.
+
+Example:
+
+```text
+GGUF backend could not start.
+
+Runtime:
+<path>
+
+Python:
+<version>
+
+llama-cpp-python:
+NOT AVAILABLE
+
+Reason:
+<actual exception>
+
+GGUF:
+<resolved path>
+
+Status:
+FAILED
+```
+
+---
+
+# 16. Test Automatically
+
+Implementation ke baad ye tests perform karo:
+
+### Test A
+
+Start ISHA normally.
+
+Expected:
+
+```text
+llama-cpp-python: OK
+GGUF model: FOUND
+GGUF model: LOADED
+```
+
+### Test B
+
+Run ISHA from a different current working directory.
+
+GGUF still load hona chahiye.
+
+### Test C
+
+Delete/rename GGUF temporarily.
+
+Expected:
+
+```text
+GGUF model not found
+```
+
+with searched paths.
+
+Application crash nahi hona chahiye.
+
+### Test D
+
+Check Python environment.
+
+Confirm:
+
+```text
+python used by ISHA
+==
+python where llama-cpp-python is installed
+```
+
+### Test E
+
+Send:
+
+```text
+Hello ISHA
+```
+
+Expected:
+
+- GGUF responds
+- streaming works
+- GUI immediately shows response
+- TTS system remains functional
+
+---
+
+# 17. IMPORTANT – Do Not Hide the Real Error
+
+Currently mujhe:
+
+```text
+[gguf] llama-cpp-python missing — pip install llama-cpp-python
+```
+
+mil raha hai.
+
+Is message ko simply change karke problem ko hide mat karo.
+
+Actual goal:
+
+```text
+Why is llama-cpp-python unavailable?
+        ↓
+Detect
+        ↓
+Fix installation/environment
+        ↓
+Verify import
+        ↓
+Load GGUF
+```
+
+---
+
+# 18. Final Deliverable
+
+Mere existing ISHA code ko preserve karte hue:
+
+1. `.isha_runtime` correctly use karo.
+2. `llama-cpp-python` ko correct runtime me install karo.
+3. Runtime Python se import verification karo.
+4. Actual installation errors expose/log karo.
+5. GGUF path resolver fix karo.
+6. Project-root based paths use karo.
+7. Existing `llama-3.2-3b-instruct-q4_k_m.gguf` support rakho.
+8. Ollama dependency mat lao.
+9. Fast GGUF streaming preserve karo.
+10. Existing GUI/features unnecessarily redesign/remove mat karo.
+11. Code update ke baad mujhe exactly batao:
+   - kaunsi files change ki
+   - runtime Python ka path kya hai
+   - `llama-cpp-python` ka import successful hua ya nahi
+   - GGUF ka resolved path kya hai
+   - model successfully load hua ya nahi
+   - agar installation fail hui to exact root cause kya hai.
+
+**Do not just tell me to manually run `pip install llama-cpp-python`. Fix the ISHA runtime/dependency management so that ISHA itself uses and verifies the correct Python environment.**

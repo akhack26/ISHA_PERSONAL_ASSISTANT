@@ -1,1759 +1,935 @@
-ISHA — Local JARVIS-Style Autonomous Assistant
+ISHA ADVANCED INSTALLER
 
-Master Development Specification for Claude
+Complete Installation, Dependency, Model & First-Run Setup Specification
 
-1. PROJECT GOAL
+I have an existing Python desktop AI project named ISHA.
 
-I have an existing Python desktop AI assistant project named ISHA.
+The main source is "mani.py".
 
-The existing source file is:
+I want you to build a professional ISHA Installer + Setup System around the existing project.
 
-"mani.py"
+Do NOT create a separate unrelated application.
 
-Do NOT treat this as a new project.
-
-Your task is to upgrade the existing ISHA project into an advanced, local-first, JARVIS-style autonomous desktop assistant.
-
-The goal is NOT to create an ordinary chatbot.
-
-The goal is to create an AGI-style autonomous PC assistant that can understand natural language, reason about tasks, choose appropriate tools/models, execute multi-step operations, observe results, recover from failures, and communicate naturally with the user.
-
-The inspiration is the fictional JARVIS concept from Iron Man/Avengers, but implementation must use realistic technologies available on the user's PC.
+The installer must install and configure the existing ISHA project correctly.
 
 ---
 
-2. MOST IMPORTANT RULE
+1. MAIN GOAL
 
-PRESERVE THE EXISTING ISHA PROJECT
+Create an installer that allows a normal user to install ISHA without manually installing:
 
-Before changing anything:
+- Python
+- pip
+- Python packages
+- llama.cpp
+- GGUF models
+- TTS dependencies
+- STT dependencies
+- optional hardware dependencies
+- required runtime components
 
-1. Read the ENTIRE "mani.py".
-2. Understand its architecture.
-3. Identify existing classes, tools, functions, GUI components, model backend, agent loop, configuration system, memory system, TTS/STT, OS-control layer and WhatsApp implementation.
-4. Do NOT rewrite the entire application blindly.
-5. Do NOT remove existing working functionality just to implement new functionality.
-6. Reuse existing code wherever practical.
-7. Refactor only when necessary.
-8. Maintain backward compatibility with existing configuration where possible.
-9. If a feature already exists, improve it instead of creating a duplicate implementation.
+The user should ideally be able to:
 
-The current source already contains significant functionality. Build on it.
+Download ISHA Installer
+        ↓
+Run Installer
+        ↓
+Install ISHA
+        ↓
+First-run hardware/system check
+        ↓
+Install required runtime/dependencies
+        ↓
+Download/select GGUF model
+        ↓
+Configure ISHA
+        ↓
+Finish
+        ↓
+Launch ISHA
 
----
-
-3. CORE ISHA IDENTITY
-
-ISHA should behave as one integrated assistant.
-
-Conceptually:
-
-                 ISHA
-                  |
-          +-------+-------+
-          |               |
-       BRAIN           TOOLS
-          |               |
-    Local AI Models     PC/OS
-          |               |
-          +-------+-------+
-                  |
-             ORCHESTRATOR
-                  |
-        PLAN -> ACT -> OBSERVE
-                  |
-              RESULT
-
-The local AI model is ISHA's reasoning brain.
-
-The tool layer is ISHA's hands.
-
-The orchestrator connects the two.
-
-The user should not need to know which internal model or tool was selected unless they explicitly ask.
+The installation process must be reliable and user-friendly.
 
 ---
 
-4. LOCAL-FIRST REQUIREMENT
+2. IMPORTANT: INSPECT EXISTING PROJECT FIRST
 
-ISHA must be local-first.
+Before implementing the installer:
 
-Primary AI inference should run locally using GGUF/llama.cpp or another supported local backend.
+1. Read the complete "mani.py".
+2. Identify every required and optional dependency.
+3. Identify the current ".isha_runtime" system.
+4. Identify the current llama.cpp installation/resolution system.
+5. Identify how GGUF models are discovered.
+6. Identify current configuration files.
+7. Identify TTS/STT dependencies.
+8. Identify GUI startup requirements.
+9. Identify OS-specific dependencies.
+10. Identify existing self-diagnostics.
 
-Internet must NOT be required for ordinary:
+Do NOT duplicate existing dependency-management logic unnecessarily.
 
-- conversation
-- reasoning
-- coding
-- file search
-- file management
-- system information
-- PC control
-- local memory
-- local model inference
-
-Internet may be used when the user explicitly requests something that inherently requires internet access, such as:
-
-- downloading software
-- opening websites
-- web search
-- downloading a model
-- downloading a dependency
-- WhatsApp Web communication
-- online services
-
-Clearly separate:
-
-LOCAL AI
-from
-ONLINE ACTIONS
-
-The AI brain should remain local.
+Reuse existing ISHA runtime logic where practical.
 
 ---
 
-5. MULTI-MODEL ARCHITECTURE
+3. INSTALLER MUST BE SEPARATE FROM THE MAIN AI RUNTIME
 
-ISHA must become a real multi-model assistant.
+Create a clean bootstrap/installer layer.
 
-Do not limit model routing to only coding.
-
-Create a proper model registry and orchestrator.
-
-Example:
-
-models/
-    chat/
-    coding/
-    reasoning/
-    vision/
-    fast/
-
-The exact directory structure can be adapted to the existing project.
-
-The user should be able to configure multiple GGUF models.
-
-Example configuration:
-
-{
-    "models": {
-        "general": "models/general/model.gguf",
-        "coding": "models/coding/model.gguf",
-        "reasoning": "models/reasoning/model.gguf",
-        "fast": "models/fast/model.gguf",
-        "vision": "models/vision/model.gguf"
-    }
-}
-
-Do not hard-code these exact filenames.
-
----
-
-6. INTELLIGENT MODEL ROUTER
-
-Create an orchestrator capable of determining the task type.
-
-Possible categories:
-
-GENERAL_CHAT
-CODING
-DEBUGGING
-REASONING
-STUDY
-RESEARCH
-FILE_OPERATION
-SYSTEM_CONTROL
-VISION
-QUICK_COMMAND
-PLANNING
-CREATIVE
-
-Example:
-
-User:
-
-«"Python mein calculator bana do"»
-
-Router:
-
-Task = CODING
-Model = coding model
-
-User:
-
-«"Mujhe relativity samjhao"»
-
-Router:
-
-Task = STUDY/REASONING
-Model = reasoning model
-
-User:
-
-«"Downloads folder mein meri PDF dhundo"»
-
-Router:
-
-Task = FILE_SEARCH
-Fast model / deterministic tool
-
-User:
-
-«"Chrome kholo"»
-
-Router:
-
-Task = QUICK_COMMAND
-No unnecessary LLM generation
-
----
-
-7. MODEL SWITCHING
-
-The router must be able to switch models automatically.
-
-The GUI must also allow manual model selection.
-
-Provide:
-
-Auto
-General
-Coding
-Reasoning
-Study
-Fast
-Vision
-
-The system must clearly know which model is currently active.
-
-If loading multiple models simultaneously would exceed available RAM/VRAM:
-
-- unload inactive models
-- load required model
-- cache where practical
-- avoid crashing
-- show loading status
-
-If hardware permits multiple loaded models, allow configurable multi-model residency.
-
----
-
-8. HARDWARE-AWARE MODEL MANAGEMENT
-
-ISHA should inspect:
-
-- CPU
-- RAM
-- GPU
-- VRAM
-- available disk space
-- OS
-- architecture
-- current resource usage
-
-Then make reasonable model-loading decisions.
-
-Example:
-
-Low RAM
-→ use smaller model
-
-High RAM/GPU
-→ allow larger model
-
-Coding request
-→ coding model
-
-Simple command
-→ don't load a large model unnecessarily
-
-Never pretend a model is available if it is not actually installed.
-
----
-
-9. AUTONOMOUS AGENT SYSTEM
-
-ISHA must use a real:
-
-PLAN
-ACT
-OBSERVE
-REASON
-REPLAN
-
-loop.
-
-Example:
-
-User:
-
-«"Desktop par ek Python project bana do jiska naam MyApp hai aur usme calculator bana ke run karke check karo."»
-
-ISHA should internally perform:
-
-1. Understand request
-2. Decide project structure
-3. Create folder
-4. Generate files
-5. Write files
-6. Inspect files
-7. Run program
-8. Capture error/output
-9. Fix if necessary
-10. Run again
-11. Verify
-12. Tell user result
-
-Do not simply respond:
-
-«"Sure, I created it."»
-
-Only claim success after the tool actually reports success.
-
----
-
-10. SELF-CORRECTION
-
-For coding and other deterministic tasks, ISHA should be able to recover from errors.
-
-Example:
-
-Generate code
-      ↓
-Run
-      ↓
-Error
-      ↓
-Read error
-      ↓
-Reason
-      ↓
-Modify code
-      ↓
-Run again
-
-Use bounded retries.
-
-Default:
-
-max_auto_fix_attempts = 3
-
-Make this configurable.
-
-Never create an infinite loop.
-
----
-
-11. PC CONTROL
-
-ISHA should provide a unified PC-control layer.
-
-Capabilities should include, where supported by the OS:
-
-Applications
-
-- open application
-- close application
-- focus application
-- minimize
-- maximize
-- switch windows
-- list open windows
-
-Files
-
-- create file
-- read file
-- write file
-- rename
-- move
-- copy
-- delete
-- create directory
-- list directory
-- search files
-- search folders
-
-System information
-
-- CPU usage
-- RAM usage
-- disk usage
-- storage information
-- network information
-- Wi-Fi state
-- running processes
-- OS information
-
-Desktop
-
-- screenshot
-- clipboard read/write
-- keyboard automation
-- mouse automation where appropriate
-
-Audio
-
-- volume
-- mute
-- unmute
-
-Display
-
-- brightness where supported
-
-Power
-
-- shutdown
-- restart
-- sleep
-
-All dangerous operations must use the existing permission/risk architecture.
-
----
-
-12. SOFTWARE INSTALLATION AND REMOVAL
-
-ISHA should be able to assist with:
-
-"Download Firefox"
-"Install VS Code"
-"Uninstall X"
-"Update package X"
-
-Architecture:
-
-User request
-     ↓
-Identify software
-     ↓
-Check availability/source
-     ↓
-Show intended action if required
-     ↓
-Download/install/uninstall
-     ↓
-Verify
-     ↓
-Report result
-
-Use official package managers or official sources whenever possible.
-
-Do NOT silently download unknown executables from random websites.
-
-For Linux, support appropriate package-manager integration.
-
-For Windows, support appropriate package-manager/installer integration where available.
-
-Detect the operating system first.
-
----
-
-13. RECYCLE BIN / TRASH
-
-ISHA must support:
-
-"Recycle Bin clean karo"
-"Trash empty karo"
-
-It should detect the OS and use the appropriate native mechanism.
-
-Because this is destructive:
-
-Risk = CONFIRM
-
-unless the user has explicitly configured trusted automatic execution.
-
-Never claim the bin was emptied without checking the result.
-
----
-
-14. FILE SEARCH ENGINE
-
-This is a major requirement.
-
-ISHA should be able to quickly find:
-
-- files
-- folders
-- images
-- videos
-- audio
-- PDFs
-- documents
-- ZIP files
-- source code
-- applications
-- recently modified files
-- large files
-
-Example:
-
-«"Meri 2025 wali PDF dhundo."»
-
-«"Desktop par calculator.py dhundo."»
-
-«"Mere computer mein saari MP4 files dhundo."»
-
-«"Last week jo image save ki thi woh dhundo."»
-
-The search system should support:
-
-filename
-extension
-folder
-size
-date modified
-media type
-path
-
-Use indexed search where practical for speed.
-
-Do not scan the entire disk with a slow recursive walk for every query if an index can be maintained.
-
-Provide fallback scanning when indexing is unavailable.
-
----
-
-15. FILE SEARCH INDEX
-
-Implement an optional local file index.
-
-Example database:
-
-SQLite
-
-Store:
-
-path
-filename
-extension
-size
-created_time
-modified_time
-media_type
-
-The index should update intelligently rather than rebuilding everything every time.
-
-Provide:
-
-Index status
-Rebuild index
-Pause indexing
-Excluded folders
-
-Privacy requirement:
-
-The index remains local.
-
----
-
-16. NATURAL LANGUAGE FILE SEARCH
-
-The user should not have to use exact syntax.
-
-These should all work:
-
-"photo dhundo"
-
-"meri last wali photo"
-
-"PDF files dhundo"
-
-"10 MB se badi videos dhundo"
-
-"Downloads mein python files dhundo"
-
-"kal modify hui file dhundo"
-
-Convert natural language into structured search parameters.
-
----
-
-17. CODING ASSISTANT
-
-ISHA must become a practical local coding agent.
-
-The user should be able to say:
-
-«"Desktop par ek website bana do."»
-
-or:
-
-«"Python mein calculator bana do."»
-
-or:
-
-«"Mere project ka bug fix karo."»
-
-ISHA should be able to:
-
-1. Understand requirements.
-2. Decide project structure.
-3. Create folders.
-4. Create files.
-5. Generate code.
-6. Save code.
-7. Inspect code.
-8. Run code.
-9. Capture errors.
-10. Debug.
-11. Fix.
-12. Re-run.
-13. Verify.
-14. Report.
-
----
-
-18. DESKTOP PROJECT CREATION
-
-Example:
-
-User:
-
-«"Desktop par MyWebsite naam ka HTML CSS JS project bana do."»
-
-ISHA should create:
-
-Desktop/
-└── MyWebsite/
-    ├── index.html
-    ├── style.css
-    └── script.js
-
-Then write the appropriate code into those files.
-
-The actual paths must be discovered from the OS rather than hard-coded.
-
----
-
-19. CODE SAFETY
-
-Generated code must NOT automatically be treated as trusted.
-
-Before executing generated code:
-
-- identify the language
-- identify intended command
-- check risk
-- use sandboxing where practical
-- require confirmation for dangerous/system-wide actions
-
-Never blindly execute arbitrary generated commands with unrestricted privileges.
-
----
-
-20. WHATSAPP
-
-ISHA should support user-requested WhatsApp messaging.
-
-Examples:
-
-«"Rahul ko WhatsApp par message karo ki main 10 minute late aaunga."»
-
-«"Mummy ko WhatsApp karo."»
-
-Current "mani.py" already contains WhatsApp parsing and a "send_whatsapp_message" tool. Preserve and improve this rather than replacing it.
-
-Support, where technically available:
-
-WhatsApp Desktop
-WhatsApp Web
-saved contact
-phone number
-
-Before actually sending a message, provide a confirmation mechanism unless the user has explicitly enabled trusted messaging.
-
-Example:
-
-ISHA:
-"Rahul ko ye message bhejna hai:
-'Main 10 minute late aaunga.'
-Send karun?"
-
-Then send only after confirmation.
-
-Do not attempt to bypass WhatsApp security, authentication, rate limits or platform protections.
-
----
-
-21. HUMAN-LIKE CONVERSATION
-
-ISHA should feel conversational, not robotic.
-
-Requirements:
-
-- understand Hindi
-- understand Hinglish
-- understand English
-- understand mixed Hindi/English
-- maintain conversation context
-- remember relevant information when explicitly permitted
-- avoid unnecessarily long replies
-- adapt response length to the task
-- distinguish casual conversation from action requests
-
-Examples:
-
-User:
-
-«"Isha, kya haal hai?"»
-
-ISHA:
-
-«"Bilkul badhiya. Batao, kya karna hai?"»
-
-User:
-
-«"Chrome kholo aur YouTube open karo."»
-
-ISHA should act instead of explaining how to do it.
-
----
-
-22. CONTEXT MEMORY
-
-Implement multiple memory levels.
-
-Short-term memory
-
-Current conversation.
-
-Working memory
-
-Current task state.
-
-Example:
-
-User:
-"Chrome kholo."
-
-ISHA:
-opens Chrome.
-
-User:
-"Ab GitHub kholo."
-
-ISHA understands "Chrome" is the browser context.
-
-Long-term memory
-
-Only store appropriate information.
-
-Examples:
-
-- user preferences
-- project names
-- preferred language
-- frequently used folders
-- approved application preferences
-
-Provide:
-
-remember
-forget
-show memory
-
-Memory must remain local.
-
----
-
-23. TOOL DISCOVERY
-
-Do not hard-code every possible user sentence.
-
-The model should be able to inspect the available capabilities.
-
-Current "mani.py" already has a capability registry and tool-name resolver. Preserve this architecture.
-
-Add:
-
-list_capabilities
-
-with categories such as:
-
-FILES
-APPLICATIONS
-SYSTEM
-NETWORK
-MEDIA
-MESSAGING
-CODING
-VISION
-MEMORY
-AUTOMATION
-
----
-
-24. UNKNOWN REQUEST HANDLING
-
-If the user asks for an operation for which no direct tool exists:
-
-Do NOT immediately say:
-
-«"I cannot do that."»
-
-Instead:
-
-Understand request
-↓
-Check capabilities
-↓
-Check whether an existing OS/tool mechanism can accomplish it
-↓
-Select safe method
-↓
-Ask permission if required
-↓
-Execute
-↓
-Verify
-
-However, never bypass security boundaries or execute arbitrary unsafe actions simply because the model thinks they might work.
-
----
-
-25. PERMISSION SYSTEM
-
-Maintain a strict risk model.
-
-Suggested tiers:
-
-SAFE
-CONFIRM
-CRITICAL
-
-SAFE
-
-Examples:
-
-- read file
-- search files
-- check RAM
-- check storage
-- screenshot
-- open calculator
-- open browser
-
-CONFIRM
-
-Examples:
-
-- delete file
-- uninstall software
-- empty trash
-- modify important settings
-- send message
-- overwrite files
-
-CRITICAL
-
-Examples:
-
-- arbitrary shell commands
-- system-wide modifications
-- privileged operations
-- destructive recursive operations
-
-New tools should default to:
-
-CONFIRM
-
-until explicitly classified.
-
-The existing "execute_tool()" validation and risk-tier architecture should be preserved.
-
----
-
-26. COMMAND EXECUTION
-
-ISHA may need terminal access for legitimate tasks.
-
-But do NOT implement:
-
-eval(model_output)
-exec(model_output)
-
-Do not directly trust arbitrary LLM-generated shell strings.
-
-Instead use:
-
-LLM
- ↓
-Structured command request
- ↓
-Validation
- ↓
-Risk classification
- ↓
-Permission
- ↓
-Execution
- ↓
-Output
- ↓
-LLM
-
-Commands should be logged.
-
----
-
-27. OBSERVABILITY
-
-Add an internal action log.
-
-Example:
-
-Time
-Task
-Model
-Tool
-Arguments
-Result
-Duration
-Risk
-Approval
-
-GUI should optionally expose:
-
-Activity
-Tools
-Model
-Current task
-
-This makes debugging the autonomous system possible.
-
----
-
-28. FAILURE RECOVERY
-
-Every action should return structured results where possible.
-
-Example:
-
-{
-    "success": true,
-    "message": "File created",
-    "path": "...",
-    "error": null
-}
-
-On failure:
-
-Detect failure
-↓
-Understand failure
-↓
-Try alternative valid method
-↓
-Retry within limit
-↓
-Ask user if necessary
-
-Do not endlessly retry.
-
----
-
-29. GUI
-
-Keep the existing PyQt5 GUI.
-
-Improve it rather than replacing it unnecessarily.
-
-The GUI should expose:
-
-ISHA
-----------------------------------
-Chat
-
-[ message area ]
-
-[ type message... ] [Send] [Mic]
-
-----------------------------------
-Mode: Auto
-Model: Auto
-Backend: llama.cpp
-
-Status:
-CPU
-RAM
-GPU
-Model
-Voice
-Tools
-
-----------------------------------
-Activity / Agent Status
-
-Optional advanced panel:
-
-Current task
-Current model
-Current tool
-Agent step
-Approval requests
-Performance
-
----
-
-30. VOICE
-
-Maintain existing TTS/STT functionality.
-
-Voice mode should support:
-
-Listen
-Understand
-Act
-Speak
-
-TTS should not read technical internal logs unless requested.
-
-Responses should sound conversational.
-
----
-
-31. VISION
-
-If a compatible local vision model/backend is available, allow ISHA to inspect:
-
-- screenshots
-- images
-- camera frames
-- selected files
-
-Potential commands:
-
-"What is on my screen?"
-"Read this image."
-"Find the button in this screenshot."
-
-Do not require a vision model if none is installed.
-
-ISHA should report capability status accurately.
-
----
-
-32. PERFORMANCE
-
-Optimize for responsiveness.
-
-Requirements:
-
-- asynchronous tool execution
-- UI must not freeze
-- streaming model responses
-- avoid unnecessary model calls
-- quick commands should bypass expensive LLM inference
-- cache where useful
-- bounded agent loops
-- model loading status
-- performance metrics
-
-The existing project already has streaming and performance metrics; preserve them.
-
----
-
-33. OS SUPPORT
-
-Design the architecture to detect:
-
-Linux
-Windows
-
-and use platform-specific implementations behind common interfaces.
-
-Example:
-
-SystemController
-    ├── LinuxSystemController
-    └── WindowsSystemController
-
-Do not scatter OS-specific code everywhere if it can be isolated.
-
----
-
-34. SECURITY
-
-ISHA is powerful, therefore security is mandatory.
-
-Requirements:
-
-- no arbitrary hidden execution
-- no silent destructive operations
-- approval for risky actions
-- command validation
-- tool allow-list
-- structured arguments
-- audit log
-- local credentials should not be exposed to the model
-- secrets should never be inserted into prompts unnecessarily
-- no disabling OS security mechanisms
-- no bypassing application authentication
-- no bypassing WhatsApp security
-- no hidden persistence mechanisms
-
----
-
-35. USER CONTROL
-
-The user remains in control.
-
-Provide settings for:
-
-Autonomy level
-
-Low
-Medium
-High
-
-Example:
-
-Low
-
-Ask before most actions.
-
-Medium
-
-Read-only actions automatic.
-
-Changes require confirmation.
-
-High
-
-Safe actions automatic.
-
-Only destructive/critical operations require confirmation.
-
-Never remove the ability to stop an agent task.
-
-Provide:
-
-STOP
-CANCEL
-
----
-
-36. STOP / EMERGENCY CONTROL
-
-At any time the user must be able to stop:
-
-- current agent loop
-- model generation
-- queued tool actions
-- automation
-- code execution where technically possible
-
-The GUI should have a visible Stop button.
-
----
-
-37. SELF-DIAGNOSTICS
-
-On startup, ISHA should check:
-
-Python
-OS
-CPU
-RAM
-GPU
-VRAM if detectable
-Model files
-Model backend
-TTS
-STT
-Microphone
-Camera
-File search
-Memory
-Tool registry
-WhatsApp integration
-Browser automation
-System control
-
-Show:
-
-READY
-DEGRADED
-UNAVAILABLE
-
-Do not claim a feature is working when it isn't.
-
-The existing self-diagnostics system should be expanded rather than replaced.
-
----
-
-38. CONFIGURATION
-
-Create/maintain a clean configuration system.
-
-Example categories:
-
-models
-routing
-voice
-memory
-search
-security
-permissions
-automation
-messaging
-performance
-UI
-
-Do not hard-code user-specific paths.
-
-Use OS path discovery.
-
----
-
-39. PROJECT STRUCTURE
-
-If "mani.py" becomes too large, gradually refactor into modules.
-
-Suggested target:
+Suggested architecture:
 
 ISHA/
 │
-├── main.py
+├── installer/
+│   ├── installer.py
+│   ├── dependency_manager.py
+│   ├── python_manager.py
+│   ├── model_manager.py
+│   ├── hardware_detector.py
+│   ├── runtime_manager.py
+│   ├── download_manager.py
+│   ├── setup_gui.py
+│   └── installer_config.json
 │
-├── core/
-│   ├── orchestrator.py
-│   ├── agent.py
-│   ├── router.py
-│   ├── memory.py
-│   └── context.py
-│
-├── models/
-│   ├── manager.py
-│   ├── llama_backend.py
-│   └── model_registry.py
-│
-├── tools/
-│   ├── registry.py
-│   ├── files.py
-│   ├── system.py
-│   ├── apps.py
-│   ├── coding.py
-│   ├── messaging.py
-│   ├── search.py
-│   └── vision.py
-│
-├── security/
-│   ├── permissions.py
-│   └── audit.py
-│
-├── ui/
-│   └── main_window.py
-│
-├── config/
-│   └── config.json
-│
-├── memory/
+├── runtime/
 │
 ├── models/
 │
-└── tests/
+├── mani.py
+│
+└── ...
 
-BUT:
-
-Do not perform this refactor blindly.
-
-First understand the current "mani.py".
-
-If keeping a single-file architecture is safer for the current project, implement the functionality there first and refactor incrementally.
+Adapt this structure to the existing project instead of blindly forcing it.
 
 ---
 
-40. TESTING
+4. INSTALLER GUI
 
-Create tests for important functionality.
+The installer itself should have a professional modern UI.
 
-At minimum test:
+It should NOT look like a basic Python script.
 
-Router
+Create a modern ISHA-themed setup interface.
 
-coding → coding model
-simple command → fast
-reasoning → reasoning
+Suggested screens:
 
-Files
+Screen 1 — Welcome
 
-search
-create
-read
-write
-rename
-move
-delete
+        ISHA
 
-Agent
+  Your Local AI Assistant
 
-plan
-tool call
-result
-next step
-completion
-failure
-retry
-stop
+      [ Get Started ]
 
-Permissions
+Show:
 
-safe
-confirm
-critical
-
-WhatsApp parser
-
-Test Hindi/Hinglish variations.
-
-Coding agent
-
-generate
-save
-run
-error
-fix
-retry
+- ISHA logo/name
+- version
+- short description
 
 ---
 
-41. EXAMPLE USER COMMANDS ISHA MUST EVENTUALLY HANDLE
+5. SYSTEM CHECK SCREEN
 
-PC control
+Before installation:
 
-"Chrome kholo."
+System Compatibility
+────────────────────────────
 
-"Notepad band karo."
+✓ Operating System
+✓ CPU
+✓ RAM
+✓ Storage
+✓ Python
+✓ GPU
+✓ Internet
+✓ Permissions
 
-"Volume 50 percent kar do."
+[ Continue ]
 
-"WiFi status batao."
+Each item should show:
 
-"Kitni RAM use ho rahi hai?"
+READY
+WARNING
+MISSING
 
-"Disk mein kitni space hai?"
-
-File search
-
-"Desktop par meri Python file dhundo."
-
-"Downloads mein PDF dhundo."
-
-"Saari MP4 files dhundo."
-
-"Kal modified files dhundo."
-
-"10 MB se badi images dhundo."
-
-File management
-
-"Desktop par Test naam ka folder banao."
-
-"Is file ko Documents mein move karo."
-
-"Is file ka naam change karo."
-
-"Is folder ko delete karo."
-
-System
-
-"Recycle Bin clean karo."
-
-"Firefox uninstall karo."
-
-"VS Code download karo."
-
-"System information batao."
-
-Coding
-
-"Desktop par Python calculator project bana do."
-
-"Ek HTML website bana do."
-
-"Is Python code ka bug fix karo."
-
-"Is project ko run karke error fix karo."
-
-Messaging
-
-"Rahul ko WhatsApp karo ki main 10 minute late aaunga."
-
-"Mummy ko WhatsApp message bhejo."
-
-Conversation
-
-"Isha, aaj ka kya plan hai?"
-
-"Mujhe Python seekhna hai."
-
-"Mujhe ye concept samjhao."
-
-"Kal wali baat yaad hai?"
+Do not falsely mark unavailable features as ready.
 
 ---
 
-42. AUTONOMOUS DECISION-MAKING
+6. PYTHON MANAGEMENT
 
-"Khud se decision lena" means:
+The installer must detect whether a compatible Python version is installed.
 
-ISHA should decide:
+If Python is available:
 
-Which model?
-Which tool?
-Which sequence?
-Whether another step is needed?
-Whether the previous action succeeded?
-Whether to retry?
-Whether to ask the user?
+Python detected
+Version: X.X.X
 
-It must NOT mean unrestricted execution.
+If Python is missing or incompatible:
 
-The decision engine should always operate inside:
+Python not found
 
-Capability boundaries
-+
-Permission boundaries
-+
-Safety boundaries
-+
-User-configured autonomy
+ISHA requires Python X
 
----
+[ Install Python ]
 
-43. IMPORTANT ARCHITECTURAL PRINCIPLE
+Where legally/technically appropriate, provide an automated installation path or bundle/use a controlled runtime.
 
-Do not make one enormous LLM prompt responsible for everything.
+Do NOT assume Python is already installed.
 
-Use:
+The final installation should not depend on the user manually running:
 
-User
- ↓
-Intent
- ↓
-Orchestrator
- ↓
-Planner
- ↓
-Model Router
- ↓
-Tool Selector
- ↓
-Permission Gateway
- ↓
-Tool
- ↓
-Observation
- ↓
-Planner
- ↓
-Final Response
-
-This makes ISHA more reliable.
+pip install ...
 
 ---
 
-44. CURRENT CODE ANALYSIS REQUIREMENT
+7. PYTHON VIRTUAL ENVIRONMENT
 
-Before modifying the code, produce an internal architecture map.
+ISHA should use its own isolated environment.
 
-Identify:
+Prefer:
 
-1. Entry point
-2. GUI
-3. Configuration
-4. Model backend
-5. Model loading
-6. Model routing
-7. Agent loop
-8. Tool registry
-9. Tool execution gateway
-10. Risk system
-11. File search
-12. Coding tools
-13. WhatsApp
-14. Memory
-15. TTS
-16. STT
-17. Vision
-18. OS control
-19. Diagnostics
-20. Background workers
+.isha_runtime/
 
-Map every relevant existing function/class to these categories.
+or another clearly isolated runtime directory.
 
-Then implement changes with minimal duplication.
+Do NOT install ISHA dependencies globally unless absolutely necessary.
+
+The installer should create/setup the environment automatically.
 
 ---
 
-45. DO NOT REMOVE WORKING FEATURES
+8. PIP DEPENDENCY INSTALLATION
 
-Before deleting or replacing any existing function:
+Automatically install all required Python packages.
+
+Build the dependency list from the actual existing ISHA project.
+
+Separate:
+
+CORE
+OPTIONAL
+HARDWARE
+VOICE
+VISION
+PLATFORM-SPECIFIC
+
+Example:
+
+Core:
+PyQt5
+requests
+...
+
+Voice:
+edge-tts
+pygame
+pyttsx3
+
+STT:
+SpeechRecognition
+PyAudio
+
+System:
+psutil
+pyautogui
+send2trash
+
+Vision:
+opencv-python-headless
+mediapipe
+
+Utilities:
+pyperclip
+
+Do NOT blindly install packages that are unnecessary for the current platform.
+
+Use platform-aware dependency selection.
+
+---
+
+9. DEPENDENCY INSTALLATION UI
+
+Show real-time progress.
+
+Example:
+
+Installing ISHA components...
+
+[████████████████░░░░] 78%
+
+Installing:
+PyQt5
+
+✓ PyQt5
+✓ requests
+✓ psutil
+→ llama.cpp
+→ TTS
+
+Never make the GUI appear frozen.
+
+Capture installation errors and display a useful message.
+
+---
+
+10. LLAMA.CPP SETUP
+
+ISHA currently uses a llama.cpp/GGUF architecture.
+
+The installer must automatically install/download the correct llama.cpp runtime.
+
+Detect hardware where possible:
+
+CPU
+Vulkan
+CUDA
+AMD/ROCm
+
+Then choose the appropriate supported backend.
+
+Do NOT download every backend.
+
+Only install the backend appropriate for the user's machine, with a safe CPU fallback.
+
+If GPU acceleration is unavailable:
+
+GPU acceleration unavailable.
+ISHA will use CPU mode.
+
+Do not treat this as a fatal installation error.
+
+---
+
+11. GGUF MODEL INSTALLATION
+
+This is a major requirement.
+
+The installer should include a model setup screen.
+
+Example:
+
+Choose ISHA Brain
+
+○ Small / Fast
+○ Balanced
+○ Advanced
+○ Custom GGUF
+
+Display:
+
+Model
+Size
+RAM requirement
+Recommended hardware
+Download size
+
+The installer should NOT blindly download a huge model onto a low-storage/RAM machine.
+
+---
+
+12. MODEL DOWNLOAD
+
+Provide:
+
+Download Model
+
+with:
+
+Download progress
+Downloaded / Total
+Speed
+ETA
+Pause
+Resume
+Cancel
+
+Verify downloaded files.
+
+Use checksum/hash verification when the model source provides one.
+
+Never claim a model is installed until the file is actually present and verified.
+
+---
+
+13. MODEL SOURCE
+
+Do not hard-code an unreliable/random model URL.
+
+Create a configurable model manifest.
+
+Example:
+
+{
+  "models": [
+    {
+      "id": "general-small",
+      "name": "ISHA General Small",
+      "url": "...",
+      "filename": "...",
+      "sha256": "...",
+      "size": 0,
+      "ram_required": 0
+    }
+  ]
+}
+
+The project maintainer should be able to update model metadata without rewriting the installer.
+
+---
+
+14. MULTI-MODEL SETUP
+
+Because ISHA is intended to become a Multi Model assistant, the installer should support installing multiple GGUF models.
+
+Example:
+
+General Model
+Coding Model
+Reasoning Model
+Fast Model
+Vision Model
+
+However, do NOT force the user to download all models.
+
+Allow:
+
+Recommended
+Minimal
+Advanced
+Custom
+
+Example:
+
+Minimal
+
+One general model.
+
+Recommended
+
+General + coding + reasoning.
+
+Advanced
+
+General + coding + reasoning + vision + fast.
+
+---
+
+15. HARDWARE-AWARE MODEL RECOMMENDATION
+
+After detecting hardware:
+
+RAM: 16 GB
+GPU: ...
+VRAM: ...
+Storage: ...
+
+recommend an appropriate model size.
+
+The recommendation should be based on technical resource requirements, not arbitrary claims.
+
+Allow the user to override the recommendation.
+
+---
+
+16. STORAGE CHECK
+
+Before downloading anything:
+
+calculate:
+
+Required space
+Available space
+Model space
+Runtime space
+Temporary download space
+
+Example:
+
+Required: 8.4 GB
+Available: 42 GB
+
+✓ Enough storage
+
+If insufficient:
+
+Not enough disk space.
+
+Required: 8.4 GB
+Available: 3.1 GB
+
+[ Choose another location ]
+
+Do not begin a large download when there is insufficient storage.
+
+---
+
+17. INSTALLATION LOCATION
+
+Allow the user to choose where ISHA is installed.
+
+Example:
+
+Install ISHA to:
+
+C:\Program Files\ISHA
+
+[ Browse ]
+
+[ Install ]
+
+On Linux use an appropriate user-writable installation location.
+
+Do not hard-code Windows paths into the entire application.
+
+---
+
+18. DESKTOP / START MENU / APPLICATION SHORTCUT
+
+After installation, create an appropriate application launcher/shortcut for the operating system.
+
+The user should be able to launch:
+
+ISHA
+
+without opening a terminal.
+
+---
+
+19. FIRST-RUN SETUP
+
+After installation, ISHA should open a first-run wizard.
+
+Example:
+
+Welcome to ISHA
+
+Let's configure your local AI assistant.
+
+Step 1: Model
+Step 2: Voice
+Step 3: Permissions
+Step 4: Search
+Step 5: Tools
+Step 6: Finish
+
+---
+
+20. TERMS & CONDITIONS
+
+The installer must include a Terms & Conditions screen.
+
+Example:
+
+ISHA Terms & Conditions
+
+[ scrollable text ]
+
+☐ I agree to the Terms & Conditions
+
+[ Continue ]
+
+The Continue button must remain disabled until the user agrees.
+
+Do NOT use deceptive acceptance mechanisms.
+
+Store only the minimum required acceptance information locally.
+
+Provide:
+
+Terms version
+Acceptance timestamp
+
+if needed for installation records.
+
+---
+
+21. PRIVACY NOTICE
+
+Add a privacy screen.
+
+Clearly explain:
+
+ISHA is designed as a local-first assistant.
+
+Local AI inference:
+Local
+
+Conversation processing:
+Local by default
+
+File search:
+Local
+
+Memory:
+Local
+
+External services:
+Only when a feature requires them or the user requests them.
+
+Be accurate about actual implementation.
+
+Do not claim "100% offline" if features such as WhatsApp or software downloading require internet.
+
+---
+
+22. PERMISSIONS / AUTONOMY SETUP
+
+First-run setup should ask:
+
+How much control should ISHA have?
+
+○ Ask before actions
+○ Balanced
+○ Advanced
+
+Explain the difference clearly.
+
+Dangerous/destructive actions should retain confirmation safeguards.
+
+---
+
+23. OPTIONAL FEATURES
+
+Let the user select:
+
+☑ Voice / TTS
+☑ Speech Recognition
+☑ Vision
+☑ File Indexing
+☑ WhatsApp integration
+☑ Advanced PC control
+☑ Coding tools
+
+If a feature is disabled, ISHA should not pretend it is available.
+
+---
+
+24. FILE INDEX SETUP
+
+If the user enables advanced file search:
 
 Ask:
 
-Is this still used?
-Does another subsystem depend on it?
-Can it be adapted?
+Enable fast file indexing?
 
-Preserve backwards compatibility.
+☑ Yes
+
+Folders:
+Desktop
+Documents
+Downloads
+Pictures
+Videos
+
+[ Customize ]
+
+Allow exclusions.
+
+Do not silently index sensitive locations without clear user control.
 
 ---
 
-46. DOCUMENTATION
+25. FIRST-RUN DIAGNOSTICS
 
-Create documentation for:
+After installation:
+
+Checking ISHA...
+
+✓ Python runtime
+✓ Dependencies
+✓ llama.cpp
+✓ GGUF model
+✓ GUI
+✓ TTS
+✓ STT
+✓ File search
+✓ Tools
+✓ Model loading
+
+Then:
+
+ISHA is ready.
+
+[ Launch ISHA ]
+
+---
+
+26. INSTALLATION ERROR HANDLING
+
+Every installer stage must have recovery.
+
+Example:
+
+Model download failed.
+
+Reason:
+Connection interrupted.
+
+[ Retry ]
+[ Change Model ]
+[ Skip ]
+[ Exit ]
+
+Do not leave the installation in a corrupted half-configured state where possible.
+
+Use resumable downloads.
+
+Use temporary files and rename after successful verification.
+
+---
+
+27. OFFLINE / LIMITED INTERNET INSTALLATION
+
+Design the installer so that if the user already has:
+
+- Python runtime
+- wheels
+- llama.cpp
+- GGUF models
+
+the installer can reuse them.
+
+Eventually support an offline package/cache.
+
+Example:
+
+ISHA Offline Installer
+
+This is especially useful for future distribution.
+
+---
+
+28. UPDATE SYSTEM
+
+Design the installer architecture so that future ISHA updates are possible.
+
+Potential update categories:
+
+ISHA application
+Python dependencies
+llama.cpp runtime
+model metadata
+models
+
+Do NOT automatically replace user models/configuration without permission.
+
+---
+
+29. UNINSTALLER
+
+The installer must create a proper uninstaller.
+
+Uninstall options:
+
+Remove application
+Remove runtime
+Remove downloaded models
+Remove cache
+Remove configuration
+Remove memory
+
+Default should protect user data unless explicitly selected.
+
+---
+
+30. INSTALLER SECURITY
+
+This installer has significant privileges, so:
+
+- do not execute arbitrary downloaded scripts
+- verify downloads where possible
+- use HTTPS
+- verify checksums/signatures where available
+- do not silently disable antivirus/security
+- do not download software from unknown sources
+- do not store secrets in plaintext unnecessarily
+- clearly identify external downloads
+
+---
+
+31. PROFESSIONAL UI DESIGN
+
+The installer and ISHA GUI should share one visual identity.
+
+Use a polished modern dark UI.
+
+Suggested visual language:
+
+Dark background
+Subtle neon accents
+Rounded panels
+Clean typography
+Smooth progress indicators
+Modern cards
+Minimal clutter
+
+Do not make it overly flashy.
+
+It should feel like a serious desktop AI product.
+
+The main ISHA GUI should also be upgraded where necessary so the installer and application feel like the same product.
+
+---
+
+32. INSTALLER COMPONENTS
+
+Recommended components:
+
+Bootstrapper
+System detector
+Python/runtime manager
+Virtual environment manager
+Dependency manager
+llama.cpp manager
+Model manager
+Download manager
+Hardware detector
+Configuration manager
+First-run wizard
+Terms/Privacy screen
+Shortcut manager
+Uninstaller
+Diagnostics
+
+---
+
+33. IMPORTANT: DO NOT BUNDLE EVERYTHING BLINDLY
+
+Large GGUF models can be several GB.
+
+Do not create an enormous installer containing every possible model.
+
+Instead provide:
+
+Small installer
++
+Model downloader
+
+Optionally provide:
+
+Offline full installer
+
+for users who specifically want it.
+
+---
+
+34. FINAL INSTALLER EXPERIENCE
+
+The ideal user experience should be:
+
+ISHA_Setup.exe
+        ↓
+Welcome
+        ↓
+Terms & Privacy
+        ↓
+System Check
+        ↓
+Install Location
+        ↓
+Runtime Setup
+        ↓
+Dependencies
+        ↓
+Hardware Detection
+        ↓
+Model Selection
+        ↓
+Model Download
+        ↓
+Feature Selection
+        ↓
+First-run Configuration
+        ↓
+Diagnostics
+        ↓
+Create Shortcut
+        ↓
+Finish
+        ↓
+Launch ISHA
+
+On Linux, provide the equivalent native installation experience rather than assuming Windows-only behavior.
+
+---
+
+35. CLAUDE IMPLEMENTATION RULE
+
+Do not only describe the installer.
+
+Actually implement it in the existing ISHA project.
+
+Before editing:
+
+1. Inspect the complete project.
+2. Map existing dependency logic.
+3. Map existing runtime logic.
+4. Map model management.
+5. Map configuration.
+6. Map GUI startup.
+7. Reuse existing functionality.
+
+Then implement incrementally.
+
+---
+
+36. TESTING REQUIREMENTS
+
+Test at least:
+
+Fresh installation
+Python already installed
+Python missing
+Dependencies missing
+Dependencies already installed
+llama.cpp missing
+GGUF missing
+GGUF already present
+Download interrupted
+Download resumed
+Insufficient disk space
+CPU-only machine
+GPU-capable machine
+No microphone
+No camera
+Optional feature disabled
+Terms not accepted
+Uninstall
+Reinstall
+Upgrade
+
+Do not mark the installer complete until these paths are handled correctly.
+
+---
+
+37. FINAL DELIVERABLE
+
+Provide:
+
+ISHA/
+├── application
+├── installer
+├── runtime management
+├── model management
+├── configuration
+├── uninstaller
+├── documentation
+└── tests
+
+Also provide:
 
 README.md
-ARCHITECTURE.md
-TOOLS.md
-MODELS.md
-CONFIGURATION.md
-SECURITY.md
-DEVELOPMENT.md
-TESTING.md
+INSTALL.md
+INSTALLER.md
+TROUBLESHOOTING.md
 
-Explain:
+The final result must allow a normal user to install ISHA without manually figuring out Python, pip packages, llama.cpp or GGUF model setup.
 
-- installation
-- model setup
-- configuration
-- architecture
-- tools
-- permissions
-- troubleshooting
-- adding a new model
-- adding a new tool
-- adding a new OS integration
+Most importantly:
 
----
+Do not destroy the existing ISHA functionality while building the installer.
 
-47. FINAL ACCEPTANCE CRITERIA
-
-Do not consider the project complete merely because it starts.
-
-ISHA should pass practical tests.
-
-Test 1
-
-"Chrome kholo."
-
-Actual Chrome must open.
-
-Test 2
-
-"Downloads mein PDF dhundo."
-
-Actual files must be returned.
-
-Test 3
-
-"Desktop par TestApp naam ka Python project banao."
-
-Actual folder/files must appear.
-
-Test 4
-
-"TestApp run karo."
-
-Actual program should run.
-
-Test 5
-
-Introduce an intentional coding error.
-
-ISHA must:
-
-detect
-→ understand
-→ fix
-→ retry
-
-within configured limits.
-
-Test 6
-
-"Rahul ko WhatsApp karo..."
-
-ISHA must resolve the contact and prepare/send through the supported WhatsApp integration with the configured confirmation policy.
-
-Test 7
-
-"Recycle Bin clean karo."
-
-ISHA must ask for confirmation according to risk policy, execute the correct OS operation, and verify the result.
-
-Test 8
-
-"RAM kitni use ho rahi hai?"
-
-ISHA should return actual system information.
-
-Test 9
-
-"Ek reasoning problem solve karo."
-
-Router should select the configured reasoning model.
-
-Test 10
-
-"Python ka program bana do."
-
-Router should select the coding model if configured.
-
----
-
-48. DEVELOPMENT WORKFLOW FOR CLAUDE
-
-Follow this exact workflow:
-
-Phase 1 — Inspect
-
-Read the complete existing "mani.py".
-
-Do not edit yet.
-
-Phase 2 — Architecture report
-
-Identify existing functionality and missing functionality.
-
-Phase 3 — Design
-
-Create the final architecture while preserving existing components.
-
-Phase 4 — Incremental implementation
-
-Implement one subsystem at a time.
-
-Recommended order:
-
-1. Core orchestrator
-2. Model manager/router
-3. Tool architecture
-4. Permission gateway
-5. File/search engine
-6. PC control
-7. Coding agent
-8. Messaging
-9. Memory
-10. Vision
-11. GUI improvements
-12. Diagnostics
-13. Testing
-14. Documentation
-
-Phase 5 — Test
-
-Run actual tests.
-
-Do not assume that code works merely because it compiles.
-
-Phase 6 — Fix
-
-Fix discovered problems.
-
-Phase 7 — Final audit
-
-Check:
-
-No duplicate systems
-No broken imports
-No dead tools
-No unsafe unrestricted execution
-No fake success messages
-No missing configuration
-No UI freezes
-No infinite agent loops
-
----
-
-49. IMPORTANT CLAUDE INSTRUCTION
-
-Do not simply give me a code explanation.
-
-I want the actual updated project implementation.
-
-When you modify the project:
-
-1. Preserve existing working functionality.
-2. Make actual code changes.
-3. Run tests.
-4. Fix errors.
-5. Provide the final modified files.
-6. Provide exact instructions for running the project.
-7. Explain what changed.
-8. Clearly list any feature that could not be implemented because a required dependency, OS API, model or external service is unavailable.
-
-Do not claim a feature works unless it has been tested or its limitation is clearly stated.
-
----
-
-50. DEFINITION OF THE FINAL ISHA
-
-The final ISHA should behave conceptually like:
-
-                    ┌─────────────────────┐
-                    │       USER          │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │   ISHA INTERFACE    │
-                    │ Text / Voice / GUI  │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │    ORCHESTRATOR     │
-                    └──────────┬──────────┘
-                               │
-                ┌──────────────┼──────────────┐
-                │              │              │
-                ▼              ▼              ▼
-             ROUTER         MEMORY          PLANNER
-                │              │              │
-                └──────────────┼──────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │    LOCAL MODELS     │
-                    │ Chat / Code /       │
-                    │ Reasoning / Vision  │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │    TOOL GATEWAY     │
-                    │ Validation + Risk   │
-                    └──────────┬──────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                    │
-          ▼                    ▼                    ▼
-       FILES                  OS                 APPS
-          │                    │                    │
-          ▼                    ▼                    ▼
-      SEARCH              SETTINGS             CONTROL
-          │                    │                    │
-          └────────────────────┼────────────────────┘
-                               │
-                ┌──────────────┼──────────────┐
-                ▼              ▼              ▼
-             CODING        WHATSAPP        VISION
-                │              │              │
-                └──────────────┼──────────────┘
-                               ▼
-                         OBSERVE RESULT
-                               │
-                               ▼
-                           REPLAN
-                               │
-                               ▼
-                           RESPONSE
-
-The objective is to make ISHA a powerful local-first autonomous desktop assistant, not merely a chat interface.
-
-Build toward this architecture incrementally while preserving the existing project.
+The installer is a deployment layer around the existing ISHA application, not a replacement for it.

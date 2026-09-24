@@ -1,0 +1,784 @@
+ISHA – WhatsApp Web + Recycle Bin Fusion
+
+Mujhe existing ISHA project me ek Tool/Action Fusion System add karna hai.
+
+Goal ye hai ki ISHA ke local GGUF model ko natural-language command samajh aaye aur woh existing OS/browser tool layer ke through appropriate action perform kare.
+
+Do important capabilities add karni hain:
+
+1. WhatsApp Web se kisi contact ko message bhejna
+2. System Recycle Bin ko clean/empty karna
+
+Ye dono features existing ISHA architecture ke andar integrate hone chahiye, separate standalone program ke roop me nahi.
+
+---
+
+1. Overall Architecture
+
+Architecture:
+
+User
+  ↓
+ISHA GUI / Voice
+  ↓
+Local GGUF Brain
+  ↓
+Intent / Action Resolver
+  ↓
+Tool Registry
+  ├── WhatsApp Web Tool
+  └── Recycle Bin Tool
+  ↓
+OS / Browser Automation
+  ↓
+Action Result
+  ↓
+GGUF
+  ↓
+Natural-language Response
+
+GGUF model ko directly unrestricted shell commands generate karke execute nahi karne dena.
+
+Instead:
+
+AI
+ ↓
+Structured Tool Call
+ ↓
+Validated Tool
+ ↓
+Permission / Confirmation
+ ↓
+Execution
+ ↓
+Result
+ ↓
+AI
+
+---
+
+2. WhatsApp Web Tool
+
+ISHA ko WhatsApp Web ke through message send karne ki capability chahiye.
+
+Example user command:
+
+WhatsApp Web kholo aur Rahul ko "Hello, kaise ho?" message bhejo.
+
+ISHA ko samajhna chahiye:
+
+Intent:
+send_whatsapp_message
+
+Recipient:
+Rahul
+
+Message:
+Hello, kaise ho?
+
+Then:
+
+ISHA
+ ↓
+WhatsApp Web Tool
+ ↓
+Browser
+ ↓
+web.whatsapp.com
+ ↓
+User's existing WhatsApp Web session
+ ↓
+Search/contact selection
+ ↓
+Message
+ ↓
+Send
+
+---
+
+3. WhatsApp Login
+
+WhatsApp credentials/password ko code me store mat karo.
+
+WhatsApp Web ka normal login/session use karo.
+
+First time:
+
+Open WhatsApp Web
+        ↓
+User scans QR code
+        ↓
+WhatsApp Web session established
+        ↓
+Session/browser profile persist
+
+Next time possible ho to existing authenticated browser profile/session reuse karo.
+
+User ko har baar QR scan karne ki zarurat nahi honi chahiye, provided WhatsApp Web session remains valid.
+
+---
+
+4. Browser Profile
+
+WhatsApp Web automation ke liye dedicated browser profile create karo.
+
+Example concept:
+
+isha_browser_profile/
+
+Isme WhatsApp Web session persist ho sakta hai.
+
+Important:
+
+- WhatsApp login credentials manually save mat karo.
+- Cookies/session data ko unnecessary expose mat karo.
+- Existing browser automation architecture ho to usko reuse karo.
+
+---
+
+5. Recipient Validation
+
+Message send karne se pehle recipient ko correctly identify karna important hai.
+
+Example:
+
+User:
+
+Rahul ko message bhejo.
+
+Agar multiple contacts matching "Rahul" milte hain:
+
+Mujhe multiple Rahul contacts mile hain.
+Kaunse Rahul ko message bhejna hai?
+
+User confirmation ke bina wrong person ko message mat bhejo.
+
+Possible matching information:
+
+Name
+Phone number
+WhatsApp contact
+
+jo WhatsApp Web interface safely expose karta hai.
+
+---
+
+6. Message Confirmation
+
+Normal message sending ke liye user ko preview/confirmation dena preferable hai, especially jab recipient ambiguous ho.
+
+Example:
+
+Message ready:
+
+To: Rahul
+Message: Hello, kaise ho?
+
+Send kar du?
+
+User:
+
+Haan
+
+Then send.
+
+Agar user explicitly command me clearly says:
+
+Rahul ko abhi "Hello" bhej do
+
+to existing permission policy ke according direct send possible hai, provided recipient unambiguous hai.
+
+---
+
+7. WhatsApp Tool API
+
+Internally structured tool interface rakho.
+
+Concept:
+
+send_whatsapp_message(
+    recipient="Rahul",
+    message="Hello, kaise ho?"
+)
+
+Tool ko validate karna chahiye:
+
+recipient != empty
+message != empty
+WhatsApp Web available
+browser session available
+
+Then action execute ho.
+
+---
+
+8. WhatsApp Web Not Logged In
+
+Agar WhatsApp Web login nahi hai:
+
+WhatsApp Web is not logged in.
+
+Please open WhatsApp Web and scan the QR code.
+
+Browser open karo.
+
+Application crash nahi honi chahiye.
+
+---
+
+9. WhatsApp Web Not Available
+
+Agar browser/automation dependency available nahi hai:
+
+WhatsApp Web automation is not available.
+Required browser automation component is missing.
+
+Actual error log me capture karo.
+
+---
+
+10. Don't Use Fake WhatsApp API
+
+Is feature ke liye fake endpoint ya fake WhatsApp API assume mat karo.
+
+User ke normal:
+
+web.whatsapp.com
+
+browser session ko use karo.
+
+Existing WhatsApp Web UI/automation ko project architecture ke according handle karo.
+
+---
+
+11. WhatsApp Message Result
+
+Message successfully send hone par:
+
+[isha] Message sent successfully to Rahul.
+
+Failure:
+
+[isha] I couldn't send the message because WhatsApp Web is not available/logged in.
+
+Actual technical reason logs me store karo.
+
+---
+
+12. Recycle Bin Tool
+
+Second capability:
+
+Natural-language command:
+
+Recycle Bin clean kar do.
+
+ya:
+
+Recycle Bin empty kar do.
+
+ISHA ko intent detect karna chahiye:
+
+Intent:
+empty_recycle_bin
+
+Then OS-specific implementation execute karo.
+
+---
+
+13. Cross-Platform Recycle Bin
+
+Existing ISHA cross-platform architecture ko preserve karo.
+
+Support:
+
+Windows
+Linux
+macOS
+
+OS detect karke appropriate native mechanism use karo.
+
+Example architecture:
+
+empty_recycle_bin()
+       ↓
+detect OS
+       ↓
+Windows → Windows-specific implementation
+Linux   → Linux trash implementation
+macOS   → macOS trash implementation
+
+Hard-coded Windows command ko Linux par execute mat karo.
+
+---
+
+14. Recycle Bin Safety
+
+Recycle Bin empty karna destructive action hai.
+
+Isliye default behavior:
+
+User:
+
+Recycle Bin clean kar do.
+
+ISHA:
+
+Recycle Bin permanently empty karne wala hoon.
+Isse Trash/Recycle Bin ki files permanently remove ho sakti hain.
+
+Kya main continue karun?
+
+User:
+
+Haan
+
+Then action execute karo.
+
+---
+
+15. Explicit Confirmation
+
+Confirmation ko bypass karne ka option sirf tab rakho jab existing ISHA permission system already trusted explicit automation mode support karta ho.
+
+Default:
+
+empty_recycle_bin
+
+requires confirmation.
+
+---
+
+16. Recycle Bin Result
+
+Success:
+
+[isha] Recycle Bin successfully cleaned.
+
+Failure:
+
+[isha] I couldn't clean the Recycle Bin.
+
+Actual OS error log me save karo.
+
+---
+
+17. AI Tool Recognition
+
+GGUF model ko tools ke available names/descriptions structured format me provide karo.
+
+Example:
+
+Available tools:
+
+send_whatsapp_message
+empty_recycle_bin
+
+Tool schema:
+
+send_whatsapp_message
+Arguments:
+    recipient
+    message
+
+empty_recycle_bin
+Arguments:
+    confirmation_required
+
+Model ko arbitrary Python/shell code generate nahi karna chahiye.
+
+---
+
+18. Natural Language Examples
+
+ISHA ko ye commands understand karni chahiye:
+
+WhatsApp
+
+Rahul ko WhatsApp par hello bolo.
+
+WhatsApp Web kholo.
+
+Amit ko message bhejo ki main 10 minute me aa raha hoon.
+
+Priya ko "Good morning" bhejo.
+
+Recycle Bin
+
+Recycle Bin clean kar do.
+
+Trash empty kar do.
+
+Recycle Bin me jo files hain unhe permanently delete kar do.
+
+In commands ko appropriate tool intent me map karo.
+
+---
+
+19. Ambiguous Commands
+
+User:
+
+Rahul ko message bhejo.
+
+Message missing hai.
+
+ISHA:
+
+Rahul ko kya message bhejna hai?
+
+User:
+
+Hello, kal milte hain.
+
+Then continue.
+
+Similarly:
+
+Amit ko WhatsApp karo.
+
+Recipient ambiguous ho to clarification.
+
+---
+
+20. Wrong Tool Prevention
+
+Example:
+
+User:
+
+Recycle Bin clean kar do.
+
+AI ko WhatsApp tool call nahi karna chahiye.
+
+User:
+
+Rahul ko WhatsApp par hello bhejo.
+
+AI ko recycle-bin tool call nahi karna chahiye.
+
+Intent resolver robust hona chahiye.
+
+---
+
+21. Tool Execution Result Back to GGUF
+
+Important:
+
+Tool execution ke baad result GGUF ko return karo.
+
+Example:
+
+User:
+Rahul ko WhatsApp par Hello bhejo.
+
+GGUF:
+send_whatsapp_message(
+    recipient="Rahul",
+    message="Hello"
+)
+
+Tool:
+SUCCESS
+
+GGUF:
+Message successfully sent to Rahul.
+
+Isse ISHA natural response generate kar sakegi.
+
+---
+
+22. GUI Integration
+
+Existing ISHA GUI preserve karo.
+
+GUI me action status show ho:
+
+[isha] Opening WhatsApp Web...
+
+Then:
+
+[isha] Searching for Rahul...
+
+Then:
+
+[isha] Sending message...
+
+Then:
+
+[isha] Message sent successfully.
+
+Recycle Bin:
+
+[isha] Preparing to empty Recycle Bin...
+
+Then confirmation UI/message.
+
+Then:
+
+[isha] Recycle Bin cleaned.
+
+---
+
+23. Voice Integration
+
+Existing ISHA STT/TTS system ke saath bhi ye tools work karne chahiye.
+
+Example:
+
+User voice:
+
+"Rahul ko WhatsApp par hello bhejo."
+
+STT:
+
+Rahul ko WhatsApp par hello bhejo.
+
+GGUF:
+
+send_whatsapp_message
+
+Tool executes.
+
+ISHA TTS:
+
+Message successfully sent to Rahul.
+
+---
+
+24. Existing GGUF Architecture Preserve
+
+Current ISHA architecture:
+
+GGUF
+ ↓
+Streaming
+ ↓
+GUI
+ ↓
+TTS
+
+break nahi hona chahiye.
+
+Tool call ke waqt internal tool execution ho sakta hai, but final response existing streaming GUI/TTS pipeline se aaye.
+
+---
+
+25. Security
+
+Very important:
+
+AI ko unrestricted:
+
+os.system()
+subprocess(..., shell=True)
+
+through arbitrary commands generate karke execute karne ka permission mat do.
+
+Instead:
+
+GGUF
+ ↓
+Tool Registry
+ ↓
+Validated Tool
+ ↓
+Permission Check
+ ↓
+Execution
+
+Only registered tools execute hon.
+
+---
+
+26. Tool Registry
+
+Existing ISHA tool registry ho to usi me add karo.
+
+Concept:
+
+TOOLS
+├── system_tools
+├── file_tools
+├── browser_tools
+├── whatsapp_tools
+└── recycle_bin_tools
+
+WhatsApp:
+
+send_whatsapp_message
+
+Recycle Bin:
+
+empty_recycle_bin
+
+---
+
+27. Error Recovery
+
+WhatsApp error:
+
+Contact not found
+
+→ user ko clearly batao.
+
+WhatsApp logged out:
+
+WhatsApp session expired
+
+→ WhatsApp Web login/QR flow open karo.
+
+Browser error:
+
+Browser automation unavailable
+
+→ clear diagnostic.
+
+Recycle Bin error:
+
+OS operation failed
+
+→ actual error log.
+
+AI generation ko crash nahi karna.
+
+---
+
+28. Logging
+
+Action logs maintain karo:
+
+timestamp
+tool
+action
+status
+error
+
+Example:
+
+[tool] send_whatsapp_message
+[recipient] Rahul
+[status] SUCCESS
+
+Sensitive WhatsApp message content ko unnecessary logs me store mat karo.
+
+---
+
+29. Testing
+
+Implementation complete hone ke baad test these:
+
+Test 1
+
+WhatsApp Web kholo.
+
+Expected:
+
+Browser opens.
+
+Test 2
+
+Rahul ko "Hello" bhejo.
+
+Expected:
+
+Correct contact → confirmation/permission → message sent.
+
+Test 3
+
+Unknown contact:
+
+XYZ ko hello bhejo.
+
+Expected:
+
+Clear not-found/ambiguous response.
+
+Test 4
+
+Recycle Bin clean kar do.
+
+Expected:
+
+Confirmation → OS tool → result.
+
+Test 5
+
+Cancel:
+
+Recycle Bin clean kar do.
+
+User:
+
+Nahi
+
+Expected:
+
+No deletion.
+
+Test 6
+
+Voice command:
+
+Rahul ko WhatsApp par hello bhejo.
+
+Expected:
+
+STT → GGUF → WhatsApp tool → TTS result.
+
+---
+
+30. Final Architecture
+
+Final ISHA architecture should become:
+
+                         ISHA
+                           │
+                           ▼
+                     Local GGUF
+                    (ISHA Brain)
+                           │
+                    Intent Resolver
+                           │
+                    Tool/Action Layer
+                           │
+             ┌─────────────┴─────────────┐
+             ▼                           ▼
+      WhatsApp Web Tool            OS Tool Layer
+             │                           │
+             ▼                           ▼
+       WhatsApp Web              Recycle Bin Tool
+             │                           │
+             ▼                           ▼
+        Send Message               Empty Trash
+             │                           │
+             └─────────────┬─────────────┘
+                           ▼
+                      Action Result
+                           │
+                           ▼
+                         GGUF
+                           │
+                  ┌────────┴────────┐
+                  ▼                 ▼
+                GUI                TTS
+
+Most Important Requirements
+
+- Existing ISHA GUI preserve karo.
+- Existing GGUF backend preserve karo.
+- Existing streaming response preserve karo.
+- Existing TTS preserve karo.
+- Existing OS/tool system preserve karo.
+- WhatsApp Web ko new registered tool ke roop me add karo.
+- Recycle Bin ko new registered OS tool ke roop me add karo.
+- Arbitrary AI-generated shell commands execute mat karo.
+- WhatsApp recipient ambiguity handle karo.
+- Recycle Bin ke liye confirmation mandatory/default rakho.
+- WhatsApp credentials/password code me store mat karo.
+- WhatsApp Web session ko normal browser profile/session ke through maintain karo.
+- Cross-platform Recycle Bin implementation rakho.
+- Tool execution ke results GGUF ko wapas do.
+- Final answer existing GUI streaming + TTS pipeline se deliver karo.
+
+Mujhe sirf demo/mock buttons nahi chahiye. Dono capabilities ko existing ISHA ke actual Tool/Action architecture me functional integration ke roop me implement karo.
